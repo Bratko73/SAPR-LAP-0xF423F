@@ -36,12 +36,12 @@ MainWindow::MainWindow(QWidget *parent)
             item->setText("0");
             ui->ConcentratedLoadTable->setItem(i,j,item);
         }
-    proc = new Processor();
+    //proc = new Processor();
 }
 
 MainWindow::~MainWindow()
 {
-    delete proc;
+    //delete proc;
     delete ui;
 }
 
@@ -255,7 +255,7 @@ void MainWindow::on_CountOfRods_valueChanged(int countOfRods)
         //ui->RodsParametersTable->setRowCount(countOfRods);
        for (int i = ui->RodsParametersTable->rowCount(); i < countOfRods; i++){
            ui->RodsParametersTable->insertRow(i);
-           proc->AddRod();
+           //proc->AddRod();
            for (int j = 0; j < ui->RodsParametersTable->columnCount(); j++) {
                QTableWidgetItem* item = new QTableWidgetItem(tr("%1").arg(1));
                ui->RodsParametersTable->setItem(i,j,item);
@@ -285,7 +285,7 @@ void MainWindow::on_CountOfRods_valueChanged(int countOfRods)
             ui->RodsParametersTable->removeRow(tmp-1);
             ui->LinearLoadTable->removeRow(tmp-1);
             ui->ConcentratedLoadTable->removeRow(tmp);
-            proc->DeleteRod();
+            //proc->DeleteRod();
             tmp--;
         }
         ui->RodsParametersTable->setRowCount(countOfRods);
@@ -305,7 +305,7 @@ void MainWindow::on_RodsParametersTable_cellChanged(int row, int column)
     if(ValidateDoubleGZero(ui->RodsParametersTable->item(row,column)->text())){
         ui->RodsParametersTable->item(row,column)->setBackground(Qt::green);
         QVariant var(ui->RodsParametersTable->item(row,column)->text());
-        switch (column) {
+        /*switch (column) {
         case 0:
             proc->ChangeRodParameter(row,'L',var.toDouble());
             break;
@@ -318,7 +318,7 @@ void MainWindow::on_RodsParametersTable_cellChanged(int row, int column)
         case 3:
             proc->ChangeRodParameter(row,'S',var.toDouble());
             break;
-        }
+        }*/
     }
     else {
         ui->RodsParametersTable->item(row,column)->setBackground(Qt::red);
@@ -330,8 +330,8 @@ void MainWindow::on_LinearLoadTable_cellChanged(int row, int column)
 {
     ui->LinearLoadTable->item(row,column)->setTextAlignment(Qt::AlignHCenter);
     if(ValidateDouble(ui->LinearLoadTable->item(row,column)->text())){
-        QVariant var(ui->LinearLoadTable->item(row,column)->text());
-        proc->ChangeLoad(row, var.toDouble());
+        //QVariant var(ui->LinearLoadTable->item(row,column)->text());
+        //proc->ChangeLoad(row, var.toDouble());
         ui->LinearLoadTable->item(row,column)->setBackground(Qt::green);
     }
     else {
@@ -345,7 +345,7 @@ void MainWindow::on_ConcentratedLoadTable_cellChanged(int row, int column)
     ui->ConcentratedLoadTable->item(row,column)->setTextAlignment(Qt::AlignHCenter);
     if(ValidateDouble(ui->ConcentratedLoadTable->item(row,column)->text())){
         QVariant var(ui->LinearLoadTable->item(row,column)->text());
-        proc->ChangeLoad(row, var.toDouble(), false);
+        //proc->ChangeLoad(row, var.toDouble(), false);
         ui->ConcentratedLoadTable->item(row,column)->setBackground(Qt::green);
     }
     else {
@@ -371,7 +371,7 @@ void MainWindow::on_ProcessorButton_clicked()
 
 void MainWindow::on_termComboBox_currentIndexChanged(int index)
 {
-    switch (index) {
+    /*switch (index) {
     case 0:
         proc->SetTerms(true,true);
         break;
@@ -381,7 +381,7 @@ void MainWindow::on_termComboBox_currentIndexChanged(int index)
     case 2:
         proc->SetTerms(true,false);
         break;
-    }
+    }*/
 }
 
 
@@ -411,7 +411,7 @@ void MainWindow::on_actionSave_triggered()
                                     QString::fromUtf8("Сохранить файл"),
                                     QDir::currentPath(),
                                     "XML (*.xml);;All files (*.*)");
-        proc->Save(fileName);
+        //proc->Save(fileName);
     }
     else{
         QMessageBox::information(NULL,QObject::tr("А, ой..."),tr("А жареных гвоздей не хочешь?"));

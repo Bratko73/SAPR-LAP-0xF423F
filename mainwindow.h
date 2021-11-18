@@ -48,6 +48,6 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
-    Processor* proc;
+    //Processor* proc;
 };
 #endif // MAINWINDOW_H
