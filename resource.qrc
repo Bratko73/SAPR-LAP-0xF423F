@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/resourses">
+        <file alias="DeltaXi">Pictures/DeltaXi.png</file>
+    </qresource>
+</RCC>

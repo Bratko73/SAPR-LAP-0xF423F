@@ -65,17 +65,22 @@
           </widget>
          </item>
          <item>
-          <widget class="QCheckBox" name="LeftTermCheckBox">
-           <property name="text">
-            <string>Левая</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QCheckBox" name="RightTermCheckBox">
-           <property name="text">
-            <string>Правая</string>
-           </property>
+          <widget class="QComboBox" name="termComboBox">
+           <item>
+            <property name="text">
+             <string>&lt;- Обе -&gt;</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Справа -&gt;</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>&lt;- Слева</string>
+            </property>
+           </item>
           </widget>
          </item>
          <item>
@@ -95,13 +100,6 @@
        </item>
        <item>
         <layout class="QVBoxLayout" name="verticalLayout_7">
-         <item>
-          <widget class="QLabel" name="label">
-           <property name="text">
-            <string>Параметры стержней</string>
-           </property>
-          </widget>
-         </item>
          <item>
           <widget class="QTableWidget" name="RodsParametersTable">
            <property name="sizePolicy">
@@ -172,15 +170,21 @@
        <item>
         <layout class="QVBoxLayout" name="verticalLayout_8">
          <item>
-          <widget class="QPushButton" name="DrawButton">
+          <widget class="QPushButton" name="MysteryButton">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>80</height>
+            </size>
+           </property>
            <property name="text">
-            <string>Отрисовать</string>
+            <string/>
            </property>
           </widget>
          </item>
@@ -193,7 +197,7 @@
             </sizepolicy>
            </property>
            <property name="text">
-            <string>Рассчитать</string>
+            <string>Расчёт</string>
            </property>
           </widget>
          </item>
@@ -237,17 +241,21 @@
    <property name="text">
     <string>Open</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
+   </property>
   </action>
   <action name="actionSave">
    <property name="text">
     <string>Save</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
+   </property>
   </action>
  </widget>
  <tabstops>
   <tabstop>CountOfRods</tabstop>
-  <tabstop>LeftTermCheckBox</tabstop>
-  <tabstop>RightTermCheckBox</tabstop>
  </tabstops>
  <resources/>
  <connections/>
