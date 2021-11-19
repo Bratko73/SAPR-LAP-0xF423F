@@ -7,7 +7,7 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 #include <QtXml/QtXml>
-#include <QTableWidgetItem>
+#include <QtWidgets>
 #include "processor.h"
 
 class MainWindow : public QMainWindow
@@ -17,18 +17,6 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-    bool ValidateDouble(const QString& str);
-    bool ValidateDoubleGZero(const QString& str);
-    bool ValidateTables();
-    QDomElement AddRodToXML(QDomDocument& doc,
-                        const QString& L,
-                        const QString& A,
-                        const QString& E,
-                        const QString& Sigma,
-                        const int Number);
-    void saveToFile(const QString& pathToFile);
-    void parseXML(QDomNode& node);
-    void loadFromFile(QString& pathToFile);
 private slots:
     void on_CountOfRods_valueChanged(int countOfRods);
 
@@ -48,6 +36,20 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
-    //Processor* proc;
+    bool ValidateDouble(const QString& str);
+    bool ValidateDoubleGZero(const QString& str);
+    bool ValidateTables();
+    QDomElement AddRodToXML(QDomDocument& doc,
+                        const QString& L,
+                        const QString& A,
+                        const QString& E,
+                        const QString& Sigma,
+                        const int Number);
+    void saveToFile(const QString& pathToFile);
+    void parseXML(QDomNode& node);
+    void loadFromFile(QString& pathToFile);
+    void draw();
+
+    QGraphicsScene* graphicsScene;
 };
 #endif // MAINWINDOW_H
