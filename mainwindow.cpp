@@ -18,6 +18,10 @@ MainWindow::MainWindow(QWidget *parent)
     ui->MysteryButton->setStyleSheet("border-image: url(d:/QtProjects/SAPR-LAP-0xF423F/DeltaXi.png); ");
     ui->CountOfRods->setValue(1);
     ui->RodsParametersTable->setRowCount(1);
+
+    graphicsScene = new QGraphicsScene;
+    ui->PreprocessorGraphicsWiew->setScene(graphicsScene);
+
     for (int j = 0; j < ui->RodsParametersTable->columnCount(); j++) {
         QTableWidgetItem* item = new QTableWidgetItem();
         item->setText("1");
@@ -39,7 +43,6 @@ MainWindow::MainWindow(QWidget *parent)
             item->setTextAlignment(Qt::AlignHCenter);
             ui->ConcentratedLoadTable->setItem(i,j,item);
         }
-    //proc = new Processor();
 }
 
 MainWindow::~MainWindow()
@@ -259,6 +262,11 @@ void MainWindow::loadFromFile(QString& pathToFile)
     ui->RodsParametersTable->blockSignals(false);
     ui->LinearLoadTable->blockSignals(false);
     ui->ConcentratedLoadTable->blockSignals(false);
+}
+// Рисование
+void MainWindow::draw()
+{
+
 }
 
 
