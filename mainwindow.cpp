@@ -21,12 +21,14 @@ MainWindow::MainWindow(QWidget *parent)
     for (int j = 0; j < ui->RodsParametersTable->columnCount(); j++) {
         QTableWidgetItem* item = new QTableWidgetItem();
         item->setText("1");
+        item->setTextAlignment(Qt::AlignHCenter);
         ui->RodsParametersTable->setItem(0,j,item);
     }
     ui->LinearLoadTable->setRowCount(1);
     for (int j = 0; j < ui->LinearLoadTable->columnCount(); j++) {
         QTableWidgetItem* item = new QTableWidgetItem();
         item->setText("0");
+        item->setTextAlignment(Qt::AlignHCenter);
         ui->LinearLoadTable->setItem(0,j,item);
     }
     ui->ConcentratedLoadTable->setRowCount(2);
@@ -34,6 +36,7 @@ MainWindow::MainWindow(QWidget *parent)
         for (int j = 0; j < ui->ConcentratedLoadTable->columnCount(); j++) {
             QTableWidgetItem* item = new QTableWidgetItem();
             item->setText("0");
+            item->setTextAlignment(Qt::AlignHCenter);
             ui->ConcentratedLoadTable->setItem(i,j,item);
         }
     //proc = new Processor();
@@ -96,7 +99,7 @@ bool MainWindow::ValidateTables()
                 return false;
     return true;
 }
-/*
+
 QDomElement MainWindow::AddRodToXML(QDomDocument &doc,
                                 const QString &L,
                                 const QString &A,
@@ -175,10 +178,11 @@ void MainWindow::saveToFile(const QString& pathToFile)
     }
     else
         QMessageBox::information(NULL,QObject::tr("А, ой..."),tr("Мы не смогли сохранить файл :("));
-}*/
+}
 
 void MainWindow::parseXML(QDomNode &node)
 {
+
     QDomNode nodeToParse = node.firstChild();
     while (!nodeToParse.isNull()){
         if (nodeToParse.isElement()){
@@ -198,22 +202,28 @@ void MainWindow::parseXML(QDomNode &node)
                   QString tmp = "rod_"+QString().setNum(i+1);
                   if(elem.tagName()==tmp){
                       ui->RodsParametersTable->item(i,0)->setText(elem.attribute("L",""));
+                      on_RodsParametersTable_cellChanged(i,0);
                       ui->RodsParametersTable->item(i,1)->setText(elem.attribute("A",""));
+                      on_RodsParametersTable_cellChanged(i,1);
                       ui->RodsParametersTable->item(i,2)->setText(elem.attribute("E",""));
+                      on_RodsParametersTable_cellChanged(i,2);
                       ui->RodsParametersTable->item(i,3)->setText(elem.attribute("Sigma",""));
+                      on_RodsParametersTable_cellChanged(i,3);
                   }
                   tmp = "q_"+QString().setNum(i+1);
                   if(elem.tagName()==tmp){
                       ui->LinearLoadTable->item(i,0)->setText(elem.attribute("q",""));
+                      on_LinearLoadTable_cellChanged(i,0);
                   }
                   tmp = "F_"+QString().setNum(i+1);
                   if(elem.tagName()==tmp){
                       ui->ConcentratedLoadTable->item(i,0)->setText(elem.attribute("F",""));
+                      on_ConcentratedLoadTable_cellChanged(i,0);
                   }
               }
               QString tmp = "F_"+QString().setNum(ui->CountOfRods->value()+1);
               if(elem.tagName()==tmp){
-                  ui->ConcentratedLoadTable->item(ui->CountOfRods->value()+1,0)->setText(elem.attribute("F",""));
+                  ui->ConcentratedLoadTable->item(ui->CountOfRods->value(),0)->setText(elem.attribute("F",""));
               }
             }
         }
@@ -222,19 +232,18 @@ void MainWindow::parseXML(QDomNode &node)
     }
 
 }
-/*    QDomElement root = doc.documentElement();
-    if (root.tagName() != "Sapr-Lap-0xF423F") {
-        qWarning("А файлик-то с гнильцой, не нами деланый!");
-        return;
-    }*/
 
 void MainWindow::loadFromFile(QString& pathToFile)
 {
+    ui->CountOfRods->blockSignals(true);
+    ui->RodsParametersTable->blockSignals(true);
+    ui->LinearLoadTable->blockSignals(true);
+    ui->ConcentratedLoadTable->blockSignals(true);
+
     QDomDocument doc;
     QFile file(pathToFile);
     if(file.open(QIODevice::ReadOnly)) {
         if(doc.setContent(&file)) {
-            QMessageBox::information(NULL,QObject::tr("А, ой..."),tr("Файл открылся"));
             QDomElement root = doc.documentElement();
             parseXML(root);
             doc.clear();
@@ -245,35 +254,42 @@ void MainWindow::loadFromFile(QString& pathToFile)
         }
             file.close();
     }
+
+    ui->CountOfRods->blockSignals(false);
+    ui->RodsParametersTable->blockSignals(false);
+    ui->LinearLoadTable->blockSignals(false);
+    ui->ConcentratedLoadTable->blockSignals(false);
 }
 
 
 void MainWindow::on_CountOfRods_valueChanged(int countOfRods)
 {
 
-    if(countOfRods > 0 && ui->RodsParametersTable->rowCount()<countOfRods) {
-        //ui->RodsParametersTable->setRowCount(countOfRods);
+    if(countOfRods > 1 && ui->RodsParametersTable->rowCount()<countOfRods) {
        for (int i = ui->RodsParametersTable->rowCount(); i < countOfRods; i++){
            ui->RodsParametersTable->insertRow(i);
-           //proc->AddRod();
            for (int j = 0; j < ui->RodsParametersTable->columnCount(); j++) {
                QTableWidgetItem* item = new QTableWidgetItem(tr("%1").arg(1));
+               item->setTextAlignment(Qt::AlignHCenter);
+               item->setBackground(Qt::green);
                ui->RodsParametersTable->setItem(i,j,item);
            }
        }
-       //ui->LinearLoadTable->setRowCount(countOfRods);
        for (int i = ui->LinearLoadTable->rowCount(); i < countOfRods; i++){
            ui->LinearLoadTable->insertRow(i);
            for (int j = 0; j < ui->LinearLoadTable->columnCount(); j++) {
                QTableWidgetItem* item = new QTableWidgetItem(tr("%1").arg(0));
+               item->setTextAlignment(Qt::AlignHCenter);
+               item->setBackground(Qt::green);
                ui->LinearLoadTable->setItem(i,j,item);
            }
        }
-       //ui->ConcentratedLoadTable->setRowCount(countOfRods+1);
        for (int i = ui->ConcentratedLoadTable->rowCount(); i < countOfRods+1; i++){
            ui->ConcentratedLoadTable->insertRow(i);
            for (int j = 0; j < ui->ConcentratedLoadTable->columnCount(); j++) {
                QTableWidgetItem* item = new QTableWidgetItem(tr("%1").arg(0));
+               item->setTextAlignment(Qt::AlignHCenter);
+               item->setBackground(Qt::green);
                ui->ConcentratedLoadTable->setItem(i,j,item);
            }
        }
@@ -285,7 +301,6 @@ void MainWindow::on_CountOfRods_valueChanged(int countOfRods)
             ui->RodsParametersTable->removeRow(tmp-1);
             ui->LinearLoadTable->removeRow(tmp-1);
             ui->ConcentratedLoadTable->removeRow(tmp);
-            //proc->DeleteRod();
             tmp--;
         }
         ui->RodsParametersTable->setRowCount(countOfRods);
@@ -301,24 +316,9 @@ void MainWindow::on_CountOfRods_valueChanged(int countOfRods)
 
 void MainWindow::on_RodsParametersTable_cellChanged(int row, int column)
 {
-    ui->RodsParametersTable->item(row,column)->setTextAlignment(Qt::AlignHCenter);
+
     if(ValidateDoubleGZero(ui->RodsParametersTable->item(row,column)->text())){
         ui->RodsParametersTable->item(row,column)->setBackground(Qt::green);
-        QVariant var(ui->RodsParametersTable->item(row,column)->text());
-        /*switch (column) {
-        case 0:
-            proc->ChangeRodParameter(row,'L',var.toDouble());
-            break;
-        case 1:
-            proc->ChangeRodParameter(row,'A',var.toDouble());
-            break;
-        case 2:
-            proc->ChangeRodParameter(row,'E',var.toDouble());
-            break;
-        case 3:
-            proc->ChangeRodParameter(row,'S',var.toDouble());
-            break;
-        }*/
     }
     else {
         ui->RodsParametersTable->item(row,column)->setBackground(Qt::red);
@@ -330,8 +330,6 @@ void MainWindow::on_LinearLoadTable_cellChanged(int row, int column)
 {
     ui->LinearLoadTable->item(row,column)->setTextAlignment(Qt::AlignHCenter);
     if(ValidateDouble(ui->LinearLoadTable->item(row,column)->text())){
-        //QVariant var(ui->LinearLoadTable->item(row,column)->text());
-        //proc->ChangeLoad(row, var.toDouble());
         ui->LinearLoadTable->item(row,column)->setBackground(Qt::green);
     }
     else {
@@ -344,8 +342,6 @@ void MainWindow::on_ConcentratedLoadTable_cellChanged(int row, int column)
 {
     ui->ConcentratedLoadTable->item(row,column)->setTextAlignment(Qt::AlignHCenter);
     if(ValidateDouble(ui->ConcentratedLoadTable->item(row,column)->text())){
-        QVariant var(ui->LinearLoadTable->item(row,column)->text());
-        //proc->ChangeLoad(row, var.toDouble(), false);
         ui->ConcentratedLoadTable->item(row,column)->setBackground(Qt::green);
     }
     else {
@@ -371,36 +367,23 @@ void MainWindow::on_ProcessorButton_clicked()
 
 void MainWindow::on_termComboBox_currentIndexChanged(int index)
 {
-    /*switch (index) {
-    case 0:
-        proc->SetTerms(true,true);
-        break;
-    case 1:
-        proc->SetTerms(false,true);
-        break;
-    case 2:
-        proc->SetTerms(true,false);
-        break;
-    }*/
+
 }
 
 
 void MainWindow::on_actionOpen_triggered()
 {
-       /* QString fileName = QFileDialog::getOpenFileName(this,
+        QString fileName = QFileDialog::getOpenFileName(this,
                                     QString::fromUtf8("Открыть файл"),
                                     QDir::currentPath(),
                                     "XML (*.xml);;All files (*.*)");
         if (fileName!=nullptr){
             loadFromFile(fileName);
-            //Processor proc(fileName);
-            //proc.CalculateDelta();
-            //proc.Save();
         }
         else{
             QMessageBox::information(NULL,QObject::tr("А, ой..."),tr("И файл... испарился?"));
             return;
-        }*/
+        }
 }
 
 
@@ -411,7 +394,7 @@ void MainWindow::on_actionSave_triggered()
                                     QString::fromUtf8("Сохранить файл"),
                                     QDir::currentPath(),
                                     "XML (*.xml);;All files (*.*)");
-        //proc->Save(fileName);
+        saveToFile(fileName);
     }
     else{
         QMessageBox::information(NULL,QObject::tr("А, ой..."),tr("А жареных гвоздей не хочешь?"));
