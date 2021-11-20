@@ -10,6 +10,12 @@
     <height>678</height>
    </rect>
   </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
   <property name="windowTitle">
    <string>SAPR-LAP-0xF423F</string>
   </property>
@@ -23,17 +29,29 @@
       <x>10</x>
       <y>10</y>
       <width>871</width>
-      <height>631</height>
+      <height>621</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout_5">
+     <property name="sizeConstraint">
+      <enum>QLayout::SetMinAndMaxSize</enum>
+     </property>
      <property name="leftMargin">
       <number>0</number>
      </property>
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout_11">
+       <property name="sizeConstraint">
+        <enum>QLayout::SetDefaultConstraint</enum>
+       </property>
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
        <item>
         <layout class="QVBoxLayout" name="verticalLayout_6">
+         <property name="sizeConstraint">
+          <enum>QLayout::SetDefaultConstraint</enum>
+         </property>
          <item>
           <spacer name="verticalSpacer_2">
            <property name="orientation">
@@ -55,7 +73,14 @@
           </widget>
          </item>
          <item>
-          <widget class="QSpinBox" name="CountOfRods"/>
+          <widget class="QSpinBox" name="CountOfRods">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+          </widget>
          </item>
          <item>
           <widget class="QLabel" name="TermLabel">
@@ -100,6 +125,9 @@
        </item>
        <item>
         <layout class="QVBoxLayout" name="verticalLayout_7">
+         <property name="sizeConstraint">
+          <enum>QLayout::SetNoConstraint</enum>
+         </property>
          <item>
           <widget class="QTableWidget" name="RodsParametersTable">
            <property name="sizePolicy">

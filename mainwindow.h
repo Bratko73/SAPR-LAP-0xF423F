@@ -1,4 +1,4 @@
-#ifndef MAINWINDOW_H
+﻿#ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
 #include <QMainWindow>
@@ -34,6 +34,8 @@ private slots:
 
     void on_actionSave_triggered();
 
+    void on_MysteryButton_clicked();
+
 private:
     Ui::MainWindow *ui;
     bool ValidateDouble(const QString& str);
@@ -48,8 +50,13 @@ private:
     void saveToFile(const QString& pathToFile);
     void parseXML(QDomNode& node);
     void loadFromFile(QString& pathToFile);
+    void LinPoly(QPolygonF &poly, double length, bool isPositive = true);
+    void ConPoly(QPolygonF &poly, double length, bool isPositive = true);
+    void TermPoly(QPolygonF &poly, double width, bool isLeft = true);
     void draw();
+    void MysteryDraw();
 
     QGraphicsScene* graphicsScene;
+    QGraphicsPixmapItem* DeltaXi;
 };
 #endif // MAINWINDOW_H

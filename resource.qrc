@@ -1,5 +1,9 @@
 <RCC>
     <qresource prefix="/resourses">
         <file alias="DeltaXi">Pictures/DeltaXi.png</file>
+        <file>duck.png</file>
+        <file>NeNado.jpg</file>
+        <file>Pechalka.jpg</file>
+        <file>tmp1.jpg</file>
     </qresource>
 </RCC>

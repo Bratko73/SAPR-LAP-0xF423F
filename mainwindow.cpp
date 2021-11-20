@@ -10,17 +10,21 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
     ui->RodsParametersTable->setColumnCount(4);
-    ui->RodsParametersTable->setHorizontalHeaderLabels(QStringList()<<"L"<<"A"<<"E"<<"Sigma");
+    ui->RodsParametersTable->setHorizontalHeaderLabels(QStringList()<<"L, м"<<"A, м^2"<<"E, Па"<<"Sigma, Па");
     ui->ConcentratedLoadTable->setColumnCount(1);
-    ui->ConcentratedLoadTable->setHorizontalHeaderLabels(QStringList()<<"F");
+    ui->ConcentratedLoadTable->setHorizontalHeaderLabels(QStringList()<<"F, Н");
     ui->LinearLoadTable->setColumnCount(1);
-    ui->LinearLoadTable->setHorizontalHeaderLabels(QStringList()<<"q");
+    ui->LinearLoadTable->setHorizontalHeaderLabels(QStringList()<<"q, Н/м");
     ui->MysteryButton->setStyleSheet("border-image: url(d:/QtProjects/SAPR-LAP-0xF423F/DeltaXi.png); ");
     ui->CountOfRods->setValue(1);
+    ui->CountOfRods->setMaximum(100);
     ui->RodsParametersTable->setRowCount(1);
+    ui->LinearLoadTable->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    ui->ConcentratedLoadTable->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
-    graphicsScene = new QGraphicsScene;
-    ui->PreprocessorGraphicsWiew->setScene(graphicsScene);
+
+    ui->PreprocessorGraphicsWiew->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    ui->PreprocessorGraphicsWiew->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
 
     for (int j = 0; j < ui->RodsParametersTable->columnCount(); j++) {
         QTableWidgetItem* item = new QTableWidgetItem();
@@ -32,7 +36,7 @@ MainWindow::MainWindow(QWidget *parent)
     for (int j = 0; j < ui->LinearLoadTable->columnCount(); j++) {
         QTableWidgetItem* item = new QTableWidgetItem();
         item->setText("0");
-        item->setTextAlignment(Qt::AlignHCenter);
+        //item->setTextAlignment(Qt::AlignHCenter);
         ui->LinearLoadTable->setItem(0,j,item);
     }
     ui->ConcentratedLoadTable->setRowCount(2);
@@ -40,14 +44,14 @@ MainWindow::MainWindow(QWidget *parent)
         for (int j = 0; j < ui->ConcentratedLoadTable->columnCount(); j++) {
             QTableWidgetItem* item = new QTableWidgetItem();
             item->setText("0");
-            item->setTextAlignment(Qt::AlignHCenter);
+            //item->setTextAlignment(Qt::AlignHCenter);
             ui->ConcentratedLoadTable->setItem(i,j,item);
         }
+    draw();
 }
 
 MainWindow::~MainWindow()
 {
-    //delete proc;
     delete ui;
 }
 
@@ -257,16 +261,184 @@ void MainWindow::loadFromFile(QString& pathToFile)
         }
             file.close();
     }
-
+    draw();
     ui->CountOfRods->blockSignals(false);
     ui->RodsParametersTable->blockSignals(false);
     ui->LinearLoadTable->blockSignals(false);
     ui->ConcentratedLoadTable->blockSignals(false);
 }
+
+void MainWindow::LinPoly(QPolygonF &poly, double length, bool isPositive)
+{
+    poly.clear();
+    int k = 1;
+    if (!isPositive)
+        k = -1;
+    poly << QPointF(0,0)
+         << QPointF(k*length,0)
+         << QPointF(k*length/2,-k*length/8)
+         << QPointF(k*length,0)
+         << QPointF(k*length/2,k*length/8)
+         << QPointF(k*length,0);
+}
+
+void MainWindow::ConPoly(QPolygonF &poly, double length, bool isPositive)
+{
+    poly.clear();
+    int k = 1;
+    if (!isPositive)
+        k = -1;
+    poly << QPointF(0,-k*length/8)
+         << QPointF(k*length/2,-k*length/8)
+         << QPointF(k*length/2,-3*k*length/8)
+         << QPointF(k*length,0)
+         << QPointF(k*length/2,3*k*length/8)
+         << QPointF(k*length/2,k*length/8)
+         << QPointF(0,k*length/8)
+         << QPointF(0,-k*length/8);
+}
+
+void MainWindow::TermPoly(QPolygonF &poly, double width, bool isLeft)
+{
+    poly.clear();
+    int k = 1;
+    if (!isLeft)
+        k = -1;
+    double step=sqrt(width);
+    for(double tmp = width/2; tmp > -width/2; tmp-=step){
+        poly << QPointF(0,-tmp/2)
+             << QPointF(-k*step,-tmp/2+k*step)
+             << QPointF(0,-tmp/2);
+    }
+}
 // Рисование
 void MainWindow::draw()
 {
+    //delete graphicsScene;
+    graphicsScene = new QGraphicsScene;
+    graphicsScene->setItemIndexMethod(QGraphicsScene::NoIndex);
+    ui->PreprocessorGraphicsWiew->setScene(graphicsScene);
+    if (!ValidateTables()){
+        graphicsScene->clear();
+        DeltaXi = graphicsScene->addPixmap(QPixmap(":/resourses/tmp1.jpg"));
+        return;
+    }
+    ui->PreprocessorGraphicsWiew->clearMask();
+    graphicsScene->clear();
+    QPen pen;
+    pen.setWidth(2);
+    pen.setColor(Qt::black);
+    pen.setBrush(Qt::black);
+    double sizeOfConArrows=50;
+    double sizeOfLinArrows=50;
+    double offsetX = 0;
+    double widthCoeff = 0;
+    for(int i = 0; i < ui->CountOfRods->value(); i++){
+        QVariant tmp = ui->RodsParametersTable->item(i,1)->text();
+        widthCoeff += tmp.toDouble();
+    }
+    widthCoeff = 150 * ui->CountOfRods->value()/ widthCoeff;
+    double lengthCoeff = ui->RodsParametersTable->item(0,0)->text().toDouble();
+    for(int i = 0; i < ui->CountOfRods->value(); i++){
+        QVariant tmp = ui->RodsParametersTable->item(i,0)->text();
+        lengthCoeff += tmp.toDouble();
+    }
+    lengthCoeff = 200 * ui->CountOfRods->value() / lengthCoeff;
 
+
+    for(int i = 0; i < ui->CountOfRods->value(); i++){
+        QVariant tmp = ui->RodsParametersTable->item(i,1)->text();
+        double h = tmp.toDouble() * widthCoeff;
+        tmp = ui->RodsParametersTable->item(i,0)->text();
+        double w = tmp.toDouble() * lengthCoeff;
+        QRectF rect (0,-h/2,w,h);
+        rect.translate(offsetX,0);
+
+
+        if ((ui->termComboBox->currentIndex() == 0 || ui->termComboBox->currentIndex() == 2)&& i == 0){
+            QPolygonF poly;
+            TermPoly(poly,h+150);
+            graphicsScene->addPolygon(poly)->setPen(pen);
+        }
+        else if(ui->ConcentratedLoadTable->item(i,0)->text().toDouble() > 0){
+            QPolygonF poly;
+            ConPoly(poly,sizeOfConArrows);
+            poly.translate(offsetX,0);
+            graphicsScene->addPolygon(poly)->setBrush(Qt::blue);
+        }
+        else if(ui->ConcentratedLoadTable->item(i,0)->text().toDouble() < 0){
+            QPolygonF poly;
+            ConPoly(poly,sizeOfConArrows,0);
+            poly.translate(offsetX,0);
+            graphicsScene->addPolygon(poly)->setBrush(Qt::blue);
+        }
+
+        if(ui->LinearLoadTable->item(i,0)->text().toDouble() > 0){
+            QPolygonF poly;
+
+            double miniOffSet = w;
+            int j = 1;
+            while (miniOffSet > sizeOfLinArrows){
+                miniOffSet = w/j;
+                j++;
+            }
+            LinPoly(poly,miniOffSet);
+            poly.translate(offsetX,0);
+            for (int k = 0; k < j-1; k++){
+                graphicsScene->addPolygon(poly.translated(k*miniOffSet,0))->setPen(pen);
+            }
+        }
+        else if(ui->LinearLoadTable->item(i,0)->text().toDouble() < 0){
+            QPolygonF poly;
+
+            double miniOffSet = w;
+            int j = 1;
+            while (miniOffSet > sizeOfLinArrows){
+                miniOffSet = w/j;
+                j++;
+            }
+            LinPoly(poly,miniOffSet,0);
+            poly.translate(offsetX,0);
+            for (int k = 1; k < j; k++){
+                graphicsScene->addPolygon(poly.translated(k*miniOffSet,0))->setPen(pen);
+            }
+        }
+
+        graphicsScene->addRect(rect)->setPen(pen);
+        offsetX += rect.width();
+
+        if ((ui->termComboBox->currentIndex() == 0 || ui->termComboBox->currentIndex() == 1)&& i == ui->CountOfRods->value()-1){
+            QPolygonF poly;
+            TermPoly(poly,h+150,0);
+            poly.translate(offsetX,0);
+            graphicsScene->addPolygon(poly)->setPen(pen);
+        }
+        else if(ui->ConcentratedLoadTable->item(ui->CountOfRods->value(),0)->text().toDouble() > 0){
+            QPolygonF poly;
+            ConPoly(poly,sizeOfConArrows);
+            poly.translate(offsetX,0);
+            graphicsScene->addPolygon(poly)->setBrush(Qt::blue);
+        }
+        else if(ui->ConcentratedLoadTable->item(ui->CountOfRods->value(),0)->text().toDouble() < 0){
+            QPolygonF poly;
+            ConPoly(poly,sizeOfConArrows,0);
+            poly.translate(offsetX,0);
+            graphicsScene->addPolygon(poly)->setBrush(Qt::blue);
+        }
+
+    }
+
+}
+
+void MainWindow::MysteryDraw()
+{
+
+/*QPolygonF pol;
+TermPoly(pol,length);
+for (int i = 0; i < 5; i++){
+    graphicsScene->addPolygon(pol.translated(i*length,0))->setBrush(Qt::yellow);
+}
+graphicsScene->addPolygon(pol)->setPen(pen);*/
 }
 
 
@@ -287,7 +459,7 @@ void MainWindow::on_CountOfRods_valueChanged(int countOfRods)
            ui->LinearLoadTable->insertRow(i);
            for (int j = 0; j < ui->LinearLoadTable->columnCount(); j++) {
                QTableWidgetItem* item = new QTableWidgetItem(tr("%1").arg(0));
-               item->setTextAlignment(Qt::AlignHCenter);
+               //item->setTextAlignment(Qt::AlignHCenter);
                item->setBackground(Qt::green);
                ui->LinearLoadTable->setItem(i,j,item);
            }
@@ -296,13 +468,14 @@ void MainWindow::on_CountOfRods_valueChanged(int countOfRods)
            ui->ConcentratedLoadTable->insertRow(i);
            for (int j = 0; j < ui->ConcentratedLoadTable->columnCount(); j++) {
                QTableWidgetItem* item = new QTableWidgetItem(tr("%1").arg(0));
-               item->setTextAlignment(Qt::AlignHCenter);
+               //item->setTextAlignment(Qt::AlignHCenter);
                item->setBackground(Qt::green);
                ui->ConcentratedLoadTable->setItem(i,j,item);
            }
        }
+       draw();
     }
-    else if(ui->RodsParametersTable->rowCount()>countOfRods){
+    else if(ui->RodsParametersTable->rowCount()>countOfRods && countOfRods >= 1){
 
         while (ui->RodsParametersTable->rowCount()>countOfRods){
             int tmp =ui->RodsParametersTable->rowCount();
@@ -317,14 +490,17 @@ void MainWindow::on_CountOfRods_valueChanged(int countOfRods)
            ui->ConcentratedLoadTable->setRowCount(countOfRods);
         else
            ui->ConcentratedLoadTable->setRowCount(countOfRods+1);
+        draw();
     }
+    else
+        ui->CountOfRods->setValue(1);
+
 }
 
 
 
 void MainWindow::on_RodsParametersTable_cellChanged(int row, int column)
 {
-
     if(ValidateDoubleGZero(ui->RodsParametersTable->item(row,column)->text())){
         ui->RodsParametersTable->item(row,column)->setBackground(Qt::green);
     }
@@ -336,9 +512,8 @@ void MainWindow::on_RodsParametersTable_cellChanged(int row, int column)
 
 void MainWindow::on_LinearLoadTable_cellChanged(int row, int column)
 {
-    ui->LinearLoadTable->item(row,column)->setTextAlignment(Qt::AlignHCenter);
     if(ValidateDouble(ui->LinearLoadTable->item(row,column)->text())){
-        ui->LinearLoadTable->item(row,column)->setBackground(Qt::green);
+        ui->LinearLoadTable->item(row,column)->setBackground(Qt::green);    
     }
     else {
         ui->LinearLoadTable->item(row,column)->setBackground(Qt::red);
@@ -348,7 +523,6 @@ void MainWindow::on_LinearLoadTable_cellChanged(int row, int column)
 
 void MainWindow::on_ConcentratedLoadTable_cellChanged(int row, int column)
 {
-    ui->ConcentratedLoadTable->item(row,column)->setTextAlignment(Qt::AlignHCenter);
     if(ValidateDouble(ui->ConcentratedLoadTable->item(row,column)->text())){
         ui->ConcentratedLoadTable->item(row,column)->setBackground(Qt::green);
     }
@@ -375,7 +549,7 @@ void MainWindow::on_ProcessorButton_clicked()
 
 void MainWindow::on_termComboBox_currentIndexChanged(int index)
 {
-
+    draw();
 }
 
 
@@ -407,5 +581,11 @@ void MainWindow::on_actionSave_triggered()
     else{
         QMessageBox::information(NULL,QObject::tr("А, ой..."),tr("А жареных гвоздей не хочешь?"));
     }
+}
+
+
+void MainWindow::on_MysteryButton_clicked()
+{
+    draw();
 }
 
