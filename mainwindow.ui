@@ -121,6 +121,28 @@
            </property>
           </spacer>
          </item>
+         <item>
+          <widget class="QPushButton" name="RefreshButton">
+           <property name="minimumSize">
+            <size>
+             <width>112</width>
+             <height>112</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>112</width>
+             <height>112</height>
+            </size>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">image: url(:/resourses/restart.png);</string>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+          </widget>
+         </item>
         </layout>
        </item>
        <item>
@@ -171,6 +193,9 @@
              <height>300</height>
             </size>
            </property>
+           <property name="styleSheet">
+            <string notr="true"/>
+           </property>
           </widget>
          </item>
         </layout>
@@ -211,6 +236,9 @@
              <height>80</height>
             </size>
            </property>
+           <property name="styleSheet">
+            <string notr="true">border-image: url(:/resourses/DeltaXi);</string>
+           </property>
            <property name="text">
             <string/>
            </property>
@@ -229,6 +257,15 @@
              <width>16777215</width>
              <height>200</height>
             </size>
+           </property>
+           <property name="font">
+            <font>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="styleSheet">
+            <string notr="true"/>
            </property>
            <property name="text">
             <string>Расчёт</string>

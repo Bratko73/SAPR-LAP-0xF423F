@@ -18,6 +18,10 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 private slots:
+    void draw();
+
+    void slotAlarmTimer();
+
     void on_CountOfRods_valueChanged(int countOfRods);
 
     void on_RodsParametersTable_cellChanged(int row, int column);
@@ -36,6 +40,8 @@ private slots:
 
     void on_MysteryButton_clicked();
 
+    void on_RefreshButton_clicked();
+
 private:
     Ui::MainWindow *ui;
     bool ValidateDouble(const QString& str);
@@ -53,10 +59,14 @@ private:
     void LinPoly(QPolygonF &poly, double length, bool isPositive = true);
     void ConPoly(QPolygonF &poly, double length, bool isPositive = true);
     void TermPoly(QPolygonF &poly, double width, bool isLeft = true);
-    void draw();
+    void PrepareMatrix();
     void MysteryDraw();
 
     QGraphicsScene* graphicsScene;
+    QVector<QVector<double>> matrix;
+    QVector<double> results;
+    Processor* processor;
     QGraphicsPixmapItem* DeltaXi;
+    QTimer* timer;
 };
 #endif // MAINWINDOW_H
