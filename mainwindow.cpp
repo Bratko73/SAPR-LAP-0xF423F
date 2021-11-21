@@ -588,10 +588,16 @@ void MainWindow::on_ProcessorButton_clicked()
     }
     for (int i = 0; i < countOfNodes-1;i++){
         if (i == 0){
+            double b = ui->LinearLoadTable->item(i,0)->text().toDouble();
+            b *= ui->RodsParametersTable->item(i,0)->text().toDouble()/2;
+            b += ui->ConcentratedLoadTable->item(i,0)->text().toDouble();
+            matrix[i][countOfNodes] = b;
+            if (countOfNodes-1 == 1){
                 double b = ui->LinearLoadTable->item(i,0)->text().toDouble();
                 b *= ui->RodsParametersTable->item(i,0)->text().toDouble()/2;
-                b += ui->ConcentratedLoadTable->item(i,0)->text().toDouble();
-                matrix[i][countOfNodes] = b;
+                b += ui->ConcentratedLoadTable->item(i+1,0)->text().toDouble();
+                matrix[i+1][countOfNodes] = b;
+            }
         }
         else if(i == countOfNodes-2){
             double q1 = ui->LinearLoadTable->item(i,0)->text().toDouble();
