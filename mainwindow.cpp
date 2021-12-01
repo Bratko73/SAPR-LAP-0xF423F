@@ -9,6 +9,7 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    isCalculated = false;
     ui->RodsParametersTable->setColumnCount(4);
     ui->RodsParametersTable->setHorizontalHeaderLabels(QStringList()<<"L, м"<<"A, м^2"<<"E, Па"<<"Sigma, Па");
     ui->ConcentratedLoadTable->setColumnCount(1);
@@ -21,31 +22,13 @@ MainWindow::MainWindow(QWidget *parent)
     ui->RodsParametersTable->setRowCount(1);
     ui->LinearLoadTable->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     ui->ConcentratedLoadTable->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-
+    ui->tabs->setCurrentIndex(0);
     ui->PreprocessorGraphicsWiew->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     ui->PreprocessorGraphicsWiew->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
-/*
-    for (int j = 0; j < ui->RodsParametersTable->columnCount(); j++) {
-        QTableWidgetItem* item = new QTableWidgetItem();
-        item->setText("1");
-        item->setTextAlignment(Qt::AlignHCenter);
-        ui->RodsParametersTable->setItem(0,j,item);
-    }
-    ui->LinearLoadTable->setRowCount(1);
-    for (int j = 0; j < ui->LinearLoadTable->columnCount(); j++) {
-        QTableWidgetItem* item = new QTableWidgetItem();
-        item->setText("0");
-        //item->setTextAlignment(Qt::AlignHCenter);
-        ui->LinearLoadTable->setItem(0,j,item);
-    }
-    ui->ConcentratedLoadTable->setRowCount(2);
-    for (int i = 0; i < 2; i++)
-        for (int j = 0; j < ui->ConcentratedLoadTable->columnCount(); j++) {
-            QTableWidgetItem* item = new QTableWidgetItem();
-            item->setText("0");
-            //item->setTextAlignment(Qt::AlignHCenter);
-            ui->ConcentratedLoadTable->setItem(i,j,item);
-        }*/
+    ui->stepSpinBox->setValue(10);
+    ui->stepSpinBox->setMaximum(1000);
+    ui->PointL->setSingleStep(0.00001);
+    ui->PointL->setDecimals(5);
     timer = new QTimer();
     timer->setSingleShot(true);
     connect(timer, SIGNAL(timeout()), this, SLOT(draw()));
@@ -112,6 +95,53 @@ bool MainWindow::ValidateTables()
             else
                 return false;
     return true;
+}
+
+void MainWindow::NxFormulas()
+{
+    Nx.clear();
+    for(int i = 0; i < ui->CountOfRods->value(); i++){
+        double A = ui->RodsParametersTable->item(i,1)->text().toDouble();
+        double E = ui->RodsParametersTable->item(i,2)->text().toDouble();
+        double L = ui->RodsParametersTable->item(i,0)->text().toDouble();
+        double q = ui->LinearLoadTable->item(i,0)->text().toDouble();
+        double res = E*A/L*(results[i+1]-results[i])+q*L/2;
+        Nx.push_back(QPair<double,double>(-q,res));
+    }
+}
+
+double MainWindow::NxValue(int rod, double x)
+{
+    double result = Nx[rod].first * x + Nx[rod].second;
+    return 1e-5 * std::round(1e5 * result);
+}
+
+double MainWindow::SigmaValue(int rod, double x)
+{
+    double A = ui->RodsParametersTable->item(rod,1)->text().toDouble();
+    double result = (Nx[rod].first * x + Nx[rod].second)/A;
+    return 1e-5 * std::round(1e5 * result);
+}
+
+void MainWindow::UxFormulas()
+{
+    Ux.clear();
+    for(int i = 0; i < ui->CountOfRods->value(); i++){
+        double A = ui->RodsParametersTable->item(i,1)->text().toDouble();
+        double E = ui->RodsParametersTable->item(i,2)->text().toDouble();
+        double L = ui->RodsParametersTable->item(i,0)->text().toDouble();
+        double q = ui->LinearLoadTable->item(i,0)->text().toDouble();
+        double a = -q/(2*E*A);
+        double b = q*L/(2*E*A)+(results[i+1]-results[i])/L;
+        double c = results[i];
+        Ux.push_back(QPair<QPair<double,double>,double>(QPair<double,double>(a,b),c));
+    }
+}
+
+double MainWindow::UxValue(int rod, double x)
+{
+    double result = Ux[rod].first.first * x*x + Ux[rod].first.second * x + Ux[rod].second;
+    return 1e-5 * std::round(1e5 * result);
 }
 
 QDomElement MainWindow::AddRodToXML(QDomDocument &doc,
@@ -321,7 +351,6 @@ void MainWindow::TermPoly(QPolygonF &poly, double width, bool isLeft)
 // Рисование
 void MainWindow::draw()
 {
-    //delete graphicsScene;
     graphicsScene = new QGraphicsScene;
     graphicsScene->setItemIndexMethod(QGraphicsScene::NoIndex);
     ui->PreprocessorGraphicsWiew->setScene(graphicsScene);
@@ -463,6 +492,15 @@ graphicsScene->addPolygon(pol)->setPen(pen);*/
 
 void MainWindow::on_CountOfRods_valueChanged(int countOfRods)
 {
+    isCalculated = false;
+    if(ui->PointRod->count()<countOfRods) {
+        for(int i = ui->PointRod->count(); i < countOfRods; i++)
+            ui->PointRod->addItem(QString(tr("%1").arg(i+1)));
+    }
+    else if(ui->PointRod->count()>countOfRods && countOfRods >= 1){
+        for(int i = ui->PointRod->count(); i > countOfRods; i--)
+            ui->PointRod->removeItem(i-1);
+    }
 
     if(countOfRods > 1 && ui->RodsParametersTable->rowCount()<countOfRods) {
        for (int i = ui->RodsParametersTable->rowCount(); i < countOfRods; i++){
@@ -520,6 +558,7 @@ void MainWindow::on_CountOfRods_valueChanged(int countOfRods)
 
 void MainWindow::on_RodsParametersTable_cellChanged(int row, int column)
 {
+    isCalculated = false;
     if(ValidateDoubleGZero(ui->RodsParametersTable->item(row,column)->text())){
         ui->RodsParametersTable->item(row,column)->setBackground(Qt::green);
     }
@@ -531,6 +570,7 @@ void MainWindow::on_RodsParametersTable_cellChanged(int row, int column)
 
 void MainWindow::on_LinearLoadTable_cellChanged(int row, int column)
 {
+    isCalculated = false;
     if(ValidateDouble(ui->LinearLoadTable->item(row,column)->text())){
         ui->LinearLoadTable->item(row,column)->setBackground(Qt::green);    
     }
@@ -542,6 +582,7 @@ void MainWindow::on_LinearLoadTable_cellChanged(int row, int column)
 
 void MainWindow::on_ConcentratedLoadTable_cellChanged(int row, int column)
 {
+    isCalculated = false;
     if(ValidateDouble(ui->ConcentratedLoadTable->item(row,column)->text())){
         ui->ConcentratedLoadTable->item(row,column)->setBackground(Qt::green);
     }
@@ -668,28 +709,33 @@ void MainWindow::on_ProcessorButton_clicked()
         tmp += var.toString()+"| ";
     }
     QMessageBox::information(NULL,QObject::tr("Процессор сделяль.."),tmp);
+    isCalculated = true;
+    NxFormulas();
+    UxFormulas();
 }
 
 
 void MainWindow::on_termComboBox_currentIndexChanged(int index)
 {
+    isCalculated = false;
     draw();
 }
 
 
 void MainWindow::on_actionOpen_triggered()
 {
-        QString fileName = QFileDialog::getOpenFileName(this,
-                                    QString::fromUtf8("Открыть файл"),
-                                    QDir::currentPath(),
-                                    "XML (*.xml);;All files (*.*)");
-        if (fileName!=nullptr){
-            loadFromFile(fileName);
-        }
-        else{
-            QMessageBox::information(NULL,QObject::tr("А, ой..."),tr("И файл... испарился?"));
-            return;
-        }
+    isCalculated = false;
+    QString fileName = QFileDialog::getOpenFileName(this,
+                                QString::fromUtf8("Открыть файл"),
+                                QDir::currentPath(),
+                                "XML (*.xml);;All files (*.*)");
+    if (fileName!=nullptr){
+        loadFromFile(fileName);
+    }
+    else{
+        QMessageBox::information(NULL,QObject::tr("А, ой..."),tr("И файл... испарился?"));
+        return;
+    }
 }
 
 
@@ -717,5 +763,39 @@ void MainWindow::on_MysteryButton_clicked()
 void MainWindow::on_RefreshButton_clicked()
 {
     draw();
+}
+
+
+void MainWindow::on_stepSpinBox_valueChanged(int arg1)
+{
+    if(arg1<10)
+        ui->stepSpinBox->setValue(10);
+}
+
+
+void MainWindow::on_PointButton_clicked()
+{
+    if(isCalculated){
+        double currRod = ui->PointRod->currentIndex();
+        double currL = ui->RodsParametersTable->item(currRod,0)->text().toDouble();
+        if(ui->PointL->value() <= currL){
+            double res = NxValue(currRod, ui->PointL->value());
+            ui->NxPoint_label->setText(QString(tr("Nx = %1").arg(res)));
+            res = UxValue(currRod,ui->PointL->value());
+            ui->UxPoint_label->setText(QString(tr("Ux = %1").arg(res)));
+            res = SigmaValue(currRod,ui->PointL->value());
+            ui->SigmaPoint_label->setText(QString(tr("Ux = %1").arg(res)));
+        }
+        else {
+            ui->NxPoint_label->setText(QString("Не лги мне!"));
+            ui->UxPoint_label->setText(QString("Мне не лги!"));
+            ui->SigmaPoint_label->setText(QString("Лги не мне!"));
+        }
+    }
+    else{
+        ui->NxPoint_label->setText(QString("Данные не пересчитаны!"));
+        ui->UxPoint_label->setText(QString("Не пересчитаны данные!"));
+        ui->SigmaPoint_label->setText(QString("Пересчитаны не данные!"));
+    }
 }
 

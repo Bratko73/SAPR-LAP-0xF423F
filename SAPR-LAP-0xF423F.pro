@@ -12,17 +12,14 @@ CONFIG += c++11
 SOURCES += \
     main.cpp \
     mainwindow.cpp \
-    postproc.cpp \
     processor.cpp
 
 HEADERS += \
     mainwindow.h \
-    postproc.h \
     processor.h
 
 FORMS += \
-    mainwindow.ui \
-    postproc.ui
+    mainwindow.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

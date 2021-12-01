@@ -42,11 +42,20 @@ private slots:
 
     void on_RefreshButton_clicked();
 
+    void on_stepSpinBox_valueChanged(int arg1);
+
+    void on_PointButton_clicked();
+
 private:
     Ui::MainWindow *ui;
     bool ValidateDouble(const QString& str);
     bool ValidateDoubleGZero(const QString& str);
     bool ValidateTables();
+    void NxFormulas();
+    double NxValue(int rod, double x);
+    double SigmaValue(int rod, double x);
+    void UxFormulas();
+    double UxValue(int rod, double x);
     QDomElement AddRodToXML(QDomDocument& doc,
                         const QString& L,
                         const QString& A,
@@ -63,10 +72,13 @@ private:
     void MysteryDraw();
 
     QGraphicsScene* graphicsScene;
+    QVector<QPair<double,double>> Nx;
+    QVector<QPair<QPair<double,double>,double>> Ux;
     QVector<QVector<double>> matrix;
     QVector<double> results;
     Processor* processor;
     QGraphicsPixmapItem* DeltaXi;
     QTimer* timer;
+    bool isCalculated;
 };
 #endif // MAINWINDOW_H
