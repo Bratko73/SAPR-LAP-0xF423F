@@ -411,7 +411,7 @@
              <item>
               <widget class="QLabel" name="label_4">
                <property name="text">
-                <string>Кол-во точек на стержень:</string>
+                <string>Кол-во участков:</string>
                </property>
               </widget>
              </item>
@@ -482,23 +482,23 @@
             </spacer>
            </item>
            <item>
-            <widget class="QCheckBox" name="checkBox_2">
+            <widget class="QCheckBox" name="checkNx">
              <property name="text">
-              <string>CheckBox</string>
+              <string>Nx</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="checkBox">
+            <widget class="QCheckBox" name="checkUx">
              <property name="text">
-              <string>CheckBox</string>
+              <string>Ux</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="checkBox_3">
+            <widget class="QCheckBox" name="checkSigma">
              <property name="text">
-              <string>CheckBox</string>
+              <string>σ</string>
              </property>
             </widget>
            </item>

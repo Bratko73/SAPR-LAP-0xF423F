@@ -113,14 +113,14 @@ void MainWindow::NxFormulas()
 double MainWindow::NxValue(int rod, double x)
 {
     double result = Nx[rod].first * x + Nx[rod].second;
-    return 1e-5 * std::round(1e5 * result);
+    return result;
 }
 
 double MainWindow::SigmaValue(int rod, double x)
 {
     double A = ui->RodsParametersTable->item(rod,1)->text().toDouble();
     double result = (Nx[rod].first * x + Nx[rod].second)/A;
-    return 1e-5 * std::round(1e5 * result);
+    return result;
 }
 
 void MainWindow::UxFormulas()
@@ -141,7 +141,49 @@ void MainWindow::UxFormulas()
 double MainWindow::UxValue(int rod, double x)
 {
     double result = Ux[rod].first.first * x*x + Ux[rod].first.second * x + Ux[rod].second;
-    return 1e-5 * std::round(1e5 * result);
+    return result;
+}
+
+void MainWindow::UpdatePostProcTable()
+{
+    if (isCalculated){
+        while(ui->postTableWidget->rowCount()>0)
+            ui->postTableWidget->removeRow(0);
+        for (int i = 0; i < ui->CountOfRods->value(); i++){
+            double L = ui->RodsParametersTable->item(i,0)->text().toDouble();
+            double step = L/ui->stepSpinBox->value();
+            double currL = 0;
+            while(currL <= L + step/2){
+                ui->postTableWidget->insertRow(ui->postTableWidget->rowCount());
+                for (int j = 0; j < ui->postTableWidget->columnCount(); j++){
+                    QTableWidgetItem* item = new QTableWidgetItem();
+                    item->setFlags(item->flags() & ~(Qt::ItemIsEditable));
+                    item->setTextAlignment(Qt::AlignHCenter);
+                    switch (j) {
+                    case 0:
+                        if(i%2==0)
+                            item->setBackground(Qt::yellow);
+                        item->setText(tr("%1").arg(1e-5*std::round(1e5*currL)));
+                        break;
+                    case 1:
+                        item->setText(tr("%1").arg(1e-5 * std::round(1e5 * UxValue(i,currL))));
+                        break;
+                    case 2:
+                        item->setText(tr("%1").arg(1e-5 * std::round(1e5 * NxValue(i,currL))));
+                        break;
+                    case 3:
+                        double sigma = std::fabs(1e-5 * std::round(1e5 * SigmaValue(i,currL)));
+                        if(ui->RodsParametersTable->item(i,3)->text().toDouble()< sigma)
+                            item->setBackground(Qt::red);
+                        item->setText(tr("%1").arg(sigma));
+                        break;
+                    }
+                    ui->postTableWidget->setItem(ui->postTableWidget->rowCount()-1,j,item);
+                }
+                currL+=step;
+            }
+        }
+    }
 }
 
 QDomElement MainWindow::AddRodToXML(QDomDocument &doc,
@@ -222,6 +264,61 @@ void MainWindow::saveToFile(const QString& pathToFile)
     }
     else
         QMessageBox::information(NULL,QObject::tr("А, ой..."),tr("Мы не смогли сохранить файл :("));
+}
+
+void MainWindow::savePostProcToFile(const QString &pathToFile)
+{
+    QDomDocument doc;
+    QDomElement root = doc.createElement("Sapr-Lap-0xF423F_PostProcessor");
+    doc.appendChild(root);
+    QDomElement countOfRods = doc.createElement("CountOfRods");
+    root.appendChild(countOfRods);
+    QDomAttr countOfRodsData = doc.createAttribute("Count");
+    countOfRodsData.setValue(QString().setNum(ui->CountOfRods->value()));
+    countOfRods.setAttributeNode(countOfRodsData);
+    QDomElement step = doc.createElement("Step");
+    root.appendChild(step);
+    QDomAttr stepData = doc.createAttribute("Step");
+    stepData.setValue(QString().setNum(ui->stepSpinBox->value()));
+    step.setAttributeNode(stepData);
+    for(int i = 0; i < ui->CountOfRods->value(); i++){
+        QDomElement rod = doc.createElement("rod_"+QString().setNum(i+1));
+        for(int j = 0; j < ui->stepSpinBox->value()+1; j++){
+            QDomElement L = doc.createElement("L_"+QString().setNum(j+1));
+            QDomAttr length = doc.createAttribute("L");
+            length.setValue(ui->postTableWidget->item(i*(ui->stepSpinBox->value()+1)+j,0)->text());
+            L.setAttributeNode(length);
+            QDomElement Values = doc.createElement("Values");
+            QDomAttr Ux = doc.createAttribute("Ux");
+            Ux.setValue(ui->postTableWidget->item(i*(ui->stepSpinBox->value()+1)+j,1)->text());
+            Values.setAttributeNode(Ux);
+            QDomAttr Nx = doc.createAttribute("Nx");
+            Nx.setValue(ui->postTableWidget->item(i*(ui->stepSpinBox->value()+1)+j,2)->text());
+            Values.setAttributeNode(Nx);
+            QDomAttr sigmaAttr = doc.createAttribute("σx");
+            sigmaAttr.setValue(ui->postTableWidget->item(i*(ui->stepSpinBox->value()+1)+j,3)->text());
+            Values.setAttributeNode(sigmaAttr);
+            L.appendChild(Values);
+            rod.appendChild(L);
+        }
+        root.appendChild(rod);
+    }
+
+    QFile file(pathToFile);
+    if(file.open(QIODevice::WriteOnly)) {
+        QTextStream(&file) << doc.toString();
+        file.close();
+    }
+    else
+        QMessageBox::information(NULL,QObject::tr("А, ой..."),tr("Мы не смогли сохранить файл :("));
+}
+
+void MainWindow::savePostProcImage(const QString &pathToFile)
+{
+    QImage image(scene->width(), scene->height(), QImage::Format_ARGB32_Premultiplied);
+    QPainter painter(&image);
+    scene->render(&painter);
+    image.save(pathToFile);
 }
 
 void MainWindow::parseXML(QDomNode &node)
@@ -348,6 +445,78 @@ void MainWindow::TermPoly(QPolygonF &poly, double width, bool isLeft)
              << QPointF(0,-tmp/2);
     }
 }
+
+double MainWindow::MaxNx()
+{
+    double result = fabs(NxValue(0,0));
+    for (int i = 0; i < ui->CountOfRods->value(); i++){
+        double currL=0;
+        double L = ui->RodsParametersTable->item(i,0)->text().toDouble();
+        while(currL< L+L/200){
+            if(result < fabs(NxValue(i,currL)))
+                result = fabs(NxValue(i,currL));
+            currL += L/100;
+        }
+    }
+    return result;
+}
+
+double MainWindow::MaxUx()
+{
+    double result = fabs(UxValue(0,0));
+    for (int i = 0; i < ui->CountOfRods->value(); i++){
+        double currL=0;
+        double L = ui->RodsParametersTable->item(i,0)->text().toDouble();
+        while(currL< L+L/2000){
+            if(result < fabs(UxValue(i,currL)))
+                result = fabs(UxValue(i,currL));
+            currL += L/1000;
+        }
+    }
+    return result;
+}
+
+void MainWindow::NxPoly(QPolygonF &poly, double length, int rod)
+{
+    double maxNx = MaxNx();
+    double L = ui->RodsParametersTable->item(rod,0)->text().toDouble();
+    poly.clear();
+    poly << QPointF(0,0)
+         << QPointF(length,0)
+         << QPointF(length,-100*NxValue(rod,L)/maxNx)
+         << QPointF(0,-100*NxValue(rod,0)/maxNx)
+         << QPointF(0,0);
+}
+
+void MainWindow::UxPoly(QPolygonF &poly, double length, int rod)
+{
+    double maxUx = MaxUx();
+    double L = ui->RodsParametersTable->item(rod,0)->text().toDouble();
+    poly.clear();
+    double currL = 0;
+    double currPixL = 0;
+    poly.append(QPoint(0,0));
+    while(currL<L+L/2000){
+        poly.append(QPoint(currPixL,-150*UxValue(rod,currL)/maxUx));
+        currL+=L/1000;
+        currPixL+=length/1000;
+    }
+    poly.append(QPoint(length,0));
+    poly.append(QPoint(0,0));
+}
+
+void MainWindow::SigmaPoly(QPolygonF &poly, double length, int rod)
+{
+    double maxNx = MaxNx();
+    double L = ui->RodsParametersTable->item(rod,0)->text().toDouble();
+    double A = ui->RodsParametersTable->item(rod,1)->text().toDouble();
+    poly.clear();
+    poly << QPointF(0,0)
+         << QPointF(length,0)
+         << QPointF(length,-100*NxValue(rod,L)/maxNx/A)
+         << QPointF(0,-100*NxValue(rod,0)/maxNx/A)
+         << QPointF(0,0);
+}
 // Рисование
 void MainWindow::draw()
 {
@@ -467,6 +636,165 @@ void MainWindow::draw()
     }
     //QRectF r = graphicsScene->sceneRect();
     //ui->PreprocessorGraphicsWiew->fitInView(r,Qt::KeepAspectRatio);
+}
+
+void MainWindow::postProcDraw()
+{
+    scene = new QGraphicsScene;
+    scene->setItemIndexMethod(QGraphicsScene::NoIndex);
+    ui->postGraphicsView->setScene(scene);
+    if (!ValidateTables()){
+        scene->clear();
+        DeltaXi = scene->addPixmap(QPixmap(":/resourses/cat.jpg"));
+        QRectF r = scene->sceneRect();
+        ui->PreprocessorGraphicsWiew->fitInView(r,Qt::KeepAspectRatio);
+        return;
+    }
+    ui->PreprocessorGraphicsWiew->clearMask();
+    scene->clear();
+    QPen pen;
+    pen.setWidth(2);
+    pen.setColor(Qt::black);
+    pen.setBrush(Qt::black);
+
+
+    double sizeOfConArrows=50;
+    double sizeOfLinArrows=30;
+    double offsetX = 0;
+    double widthCoeff = 0;
+    for(int i = 0; i < ui->CountOfRods->value(); i++){
+        QVariant tmp = ui->RodsParametersTable->item(i,1)->text();
+        widthCoeff += tmp.toDouble();
+    }
+    widthCoeff = ui->PreprocessorGraphicsWiew->rect().height()/2 * ui->CountOfRods->value()/ widthCoeff;
+    double lengthCoeff = ui->RodsParametersTable->item(0,0)->text().toDouble();
+    for(int i = 0; i < ui->CountOfRods->value(); i++){
+        QVariant tmp = ui->RodsParametersTable->item(i,0)->text();
+        lengthCoeff += tmp.toDouble();
+    }
+    lengthCoeff = 200 * ui->CountOfRods->value() / lengthCoeff;
+
+    double offsetY = 400;
+    for(int i = 0; i < ui->CountOfRods->value(); i++){
+        QVariant tmp = ui->RodsParametersTable->item(i,1)->text();
+        double h = tmp.toDouble() * widthCoeff;
+        tmp = ui->RodsParametersTable->item(i,0)->text();
+        double w = tmp.toDouble() * lengthCoeff;
+
+        QRectF rect (0,-h/2,w,h);
+        rect.translate(offsetX,0);
+        QLine lineV(0,0,0,offsetY);
+        lineV.translate(offsetX,0);
+        QLine lineH(0,offsetY-100,w,offsetY-100);
+        lineH.translate(offsetX,0);
+
+        if(ui->checkNx->isChecked()){
+            QPolygonF poly;
+            NxPoly(poly,w,i);
+            poly.translate(offsetX,offsetY-100);
+            QPen Nxpen;
+            Nxpen.setWidth(2);
+            Nxpen.setColor(Qt::blue);
+            Nxpen.setBrush(Qt::blue);
+            scene->addPolygon(poly)->setPen(Nxpen);
+        }
+        if(ui->checkUx->isChecked()){
+            QPolygonF poly;
+            UxPoly(poly,w,i);
+            poly.translate(offsetX,offsetY-100);
+            QPen Uxpen;
+            Uxpen.setWidth(2);
+            Uxpen.setColor(Qt::red);
+            Uxpen.setBrush(Qt::red);
+            scene->addPolygon(poly)->setPen(Uxpen);
+        }
+        if(ui->checkSigma->isChecked()){
+            QPolygonF poly;
+            SigmaPoly(poly,w,i);
+            poly.translate(offsetX,offsetY-100);
+            QPen Sigmapen;
+            Sigmapen.setWidth(2);
+            Sigmapen.setColor(Qt::green);
+            Sigmapen.setBrush(Qt::green);
+            scene->addPolygon(poly)->setPen(Sigmapen);
+        }
+        if ((ui->termComboBox->currentIndex() == 0 || ui->termComboBox->currentIndex() == 2)&& i == 0){
+            QPolygonF poly;
+            TermPoly(poly,h+150);
+            scene->addPolygon(poly)->setPen(pen);
+        }
+        else if(ui->ConcentratedLoadTable->item(i,0)->text().toDouble() > 0){
+            QPolygonF poly;
+            ConPoly(poly,sizeOfConArrows);
+            poly.translate(offsetX,0);
+            scene->addPolygon(poly)->setBrush(Qt::blue);
+        }
+        else if(ui->ConcentratedLoadTable->item(i,0)->text().toDouble() < 0){
+            QPolygonF poly;
+            ConPoly(poly,sizeOfConArrows,0);
+            poly.translate(offsetX,0);
+            scene->addPolygon(poly)->setBrush(Qt::blue);
+        }
+        if(ui->LinearLoadTable->item(i,0)->text().toDouble() > 0){
+            QPolygonF poly;
+
+            double miniOffSet = w;
+            int j = 1;
+            while (miniOffSet > sizeOfLinArrows){
+                miniOffSet = w/j;
+                j++;
+            }
+            LinPoly(poly,miniOffSet);
+            poly.translate(offsetX,0);
+            for (int k = 0; k < j-1; k++){
+                scene->addPolygon(poly.translated(k*miniOffSet,0))->setPen(pen);
+            }
+        }
+        else if(ui->LinearLoadTable->item(i,0)->text().toDouble() < 0){
+            QPolygonF poly;
+
+            double miniOffSet = w;
+            int j = 1;
+            while (miniOffSet > sizeOfLinArrows){
+                miniOffSet = w/j;
+                j++;
+            }
+            LinPoly(poly,miniOffSet,0);
+            poly.translate(offsetX,0);
+            for (int k = 1; k < j; k++){
+                scene->addPolygon(poly.translated(k*miniOffSet,0))->setPen(pen);
+            }
+        }
+
+        scene->addRect(rect)->setPen(pen);
+        scene->addLine(lineV)->setPen(pen);
+        scene->addLine(lineH)->setPen(pen);
+        offsetX += rect.width();
+        if(i == ui->CountOfRods->value()-1){
+            QLine line(0,0,0,offsetY);
+            line.translate(offsetX,0);
+            scene->addLine(line)->setPen(pen);
+            if (ui->termComboBox->currentIndex() == 0 || ui->termComboBox->currentIndex() == 1){
+                QPolygonF poly;
+                TermPoly(poly,h+150,0);
+                poly.translate(offsetX,0);
+                scene->addPolygon(poly)->setPen(pen);
+            }
+            else if(ui->ConcentratedLoadTable->item(ui->CountOfRods->value(),0)->text().toDouble() > 0){
+                QPolygonF poly;
+                ConPoly(poly,sizeOfConArrows);
+                poly.translate(offsetX,0);
+                scene->addPolygon(poly)->setBrush(Qt::blue);
+            }
+            else if(ui->ConcentratedLoadTable->item(ui->CountOfRods->value(),0)->text().toDouble() < 0){
+                QPolygonF poly;
+                ConPoly(poly,sizeOfConArrows,0);
+                poly.translate(offsetX,0);
+                scene->addPolygon(poly)->setBrush(Qt::blue);
+            }
+        }
+    }
+
 }
 
 void MainWindow::MysteryDraw()
@@ -712,6 +1040,8 @@ void MainWindow::on_ProcessorButton_clicked()
     isCalculated = true;
     NxFormulas();
     UxFormulas();
+    UpdatePostProcTable();
+    postProcDraw();
 }
 
 
@@ -741,16 +1071,32 @@ void MainWindow::on_actionOpen_triggered()
 
 void MainWindow::on_actionSave_triggered()
 {
-    if(ValidateTables()){
+    if(ui->tabs->currentIndex() == 0){
+        if(ValidateTables()){
+            QString fileName = QFileDialog::getSaveFileName(this,
+                                        QString::fromUtf8("Сохранить файл"),
+                                        QDir::currentPath(),
+                                    "XML (*.xml);;All files (*.*)");
+            saveToFile(fileName);
+        }
+        else{
+            QMessageBox::information(NULL,QObject::tr("А, ой..."),tr("А жареных гвоздей не хочешь?"));
+        }
+    }
+    else if (isCalculated){
         QString fileName = QFileDialog::getSaveFileName(this,
                                     QString::fromUtf8("Сохранить файл"),
                                     QDir::currentPath(),
-                                    "XML (*.xml);;All files (*.*)");
-        saveToFile(fileName);
+                                "XML (*.xml);;All files (*.*)");
+        savePostProcToFile(fileName);
+
+        fileName = QFileDialog::getSaveFileName(this,
+                                    QString::fromUtf8("Сохранить файл"),
+                                    QDir::currentPath(),
+                                "PNG (*.png);;All files (*.*)");
+        savePostProcImage(fileName);
     }
-    else{
-        QMessageBox::information(NULL,QObject::tr("А, ой..."),tr("А жареных гвоздей не хочешь?"));
-    }
+
 }
 
 
@@ -770,6 +1116,7 @@ void MainWindow::on_stepSpinBox_valueChanged(int arg1)
 {
     if(arg1<10)
         ui->stepSpinBox->setValue(10);
+    UpdatePostProcTable();
 }
 
 
@@ -797,5 +1144,23 @@ void MainWindow::on_PointButton_clicked()
         ui->UxPoint_label->setText(QString("Не пересчитаны данные!"));
         ui->SigmaPoint_label->setText(QString("Пересчитаны не данные!"));
     }
+}
+
+
+void MainWindow::on_checkNx_stateChanged(int arg1)
+{
+    postProcDraw();
+}
+
+
+void MainWindow::on_checkUx_stateChanged(int arg1)
+{
+    postProcDraw();
+}
+
+
+void MainWindow::on_checkSigma_stateChanged(int arg1)
+{
+    postProcDraw();
 }
 
