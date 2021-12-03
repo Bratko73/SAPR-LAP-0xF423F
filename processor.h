@@ -7,15 +7,15 @@
 class Processor
 {
 public:
-    Processor();
+    Processor(int countOfRods);
     ~Processor();
-    void Calculate();
+    void Calculate(const QVector<QVector<double>>& Matrix);
     double* GetDeltas();
 private:
 
     void Gauss();
-    bool isCalculated;
-    int countOfRods;
+    //bool isCalculated;
+    int countOfNodes;
     double* delta;
 };
 
