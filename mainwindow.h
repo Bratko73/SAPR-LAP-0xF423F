@@ -54,6 +54,26 @@ private slots:
 
     void on_checkSigma_stateChanged(int arg1);
 
+    void on_mysteryAction_triggered();
+
+    void on_mysteryButton2_clicked();
+
+    void on_mysteryButton3_clicked();
+
+    void on_endThis_clicked();
+
+    void on_pushButton_4_clicked();
+
+    void on_pushButton_2_clicked();
+
+    void on_pushButton_clicked();
+
+    void on_pushButton_3_clicked();
+
+    void on_pushButton_5_clicked();
+
+    void on_pushButton_6_clicked();
+
 private:
     Ui::MainWindow *ui;
     bool ValidateDouble(const QString& str);
@@ -82,12 +102,13 @@ private:
     void TermPoly(QPolygonF &poly, double width, bool isLeft = true);
     double MaxNx();
     double MaxUx();
+    double MaxSigma();
+    double MeanA();
     void NxPoly(QPolygonF &poly, double length, int rod);
     void UxPoly(QPolygonF &poly, double length, int rod);
     void SigmaPoly(QPolygonF &poly, double length, int rod);
     void PrepareMatrix();
-    void MysteryDraw();
-
+    void MysteryRestore();
     QGraphicsScene* graphicsScene;
     QGraphicsScene* scene;
     QVector<QPair<double,double>> Nx;
@@ -98,5 +119,6 @@ private:
     QGraphicsPixmapItem* DeltaXi;
     QTimer* timer;
     bool isCalculated;
+    int mysteryCounter;
 };
 #endif // MAINWINDOW_H

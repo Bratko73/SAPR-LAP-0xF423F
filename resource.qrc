@@ -3,17 +3,27 @@
         <file alias="DeltaXi">Pictures/DeltaXi.png</file>
         <file>duck.png</file>
         <file>NeNado.jpg</file>
-        <file>Pechalka.jpg</file>
-        <file>tmp1.jpg</file>
         <file>cat.jpg</file>
-        <file>refresh.png</file>
         <file>restart.png</file>
-        <file>kostyl.jpg</file>
-        <file>tmp2.jpg</file>
         <file>samoironia.jpg</file>
-        <file>trudno.jpg</file>
+        <file>RealDuck.png</file>
+        <file>RealDuck1111.png</file>
     </qresource>
     <qresource prefix="/">
-        <file>AlexFont1 Italic.ttf</file>
+        <file>Pictures/DeltaXi-1.png</file>
+        <file>Pictures/DeltaXi-2.png</file>
+        <file>Pictures/DeltaXi-3.png</file>
+        <file>Pictures/DeltaXi-4.png</file>
+        <file>Pictures/DeltaXi-5.png</file>
+        <file>Pictures/DeltaXi-6.png</file>
+        <file>Pictures/DeltaXi.png</file>
+        <file>Pictures/DuckPic.png</file>
+        <file>Pictures/cat.gif</file>
+        <file>Pictures/DuckWithKnife.png</file>
+        <file>Pictures/DontForget.png</file>
+        <file>Pictures/kostyl.jpg</file>
+        <file>Pictures/duck2222.jpg</file>
+        <file>Pictures/duck3333.jpg</file>
+        <file>Pictures/fox.jpg</file>
     </qresource>
 </RCC>
