@@ -33,6 +33,12 @@ MainWindow::MainWindow(QWidget *parent)
     timer->setSingleShot(true);
     connect(timer, SIGNAL(timeout()), this, SLOT(draw()));
     timer->start(50);
+    ui->mysteryAction->setIcon(QIcon(":/Pictures/DeltaXi-6.png"));
+    ui->mysteryAction->setVisible(false);
+    ui->mysteryButton2->setVisible(false);
+    ui->mysteryButton3->setVisible(false);
+    ui->tabs->setTabVisible(2,false);
+    mysteryCounter = 0;
 }
 
 MainWindow::~MainWindow()
@@ -119,7 +125,7 @@ double MainWindow::NxValue(int rod, double x)
 double MainWindow::SigmaValue(int rod, double x)
 {
     double A = ui->RodsParametersTable->item(rod,1)->text().toDouble();
-    double result = (Nx[rod].first * x + Nx[rod].second)/A;
+    double result = NxValue(rod,x)/A;
     return result;
 }
 
@@ -476,6 +482,31 @@ double MainWindow::MaxUx()
     return result;
 }
 
+double MainWindow::MaxSigma()
+{
+    double result = fabs(SigmaValue(0,0));
+    for (int i = 0; i < ui->CountOfRods->value(); i++){
+        double currL=0;
+        double L = ui->RodsParametersTable->item(i,0)->text().toDouble();
+        while(currL< L+L/200){
+            if(result < fabs(SigmaValue(i,currL)))
+                result = fabs(SigmaValue(i,currL));
+            currL += L/100;
+        }
+    }
+    return result;
+}
+
+double MainWindow::MeanA()
+{
+    double result = 0;
+    for (int i = 0; i < ui->CountOfRods->value(); i++){
+        double A = ui->RodsParametersTable->item(i,1)->text().toDouble();
+        result += A;
+    }
+    return result/ui->CountOfRods->value();
+}
+
 void MainWindow::NxPoly(QPolygonF &poly, double length, int rod)
 {
     double maxNx = MaxNx();
@@ -507,15 +538,10 @@ void MainWindow::UxPoly(QPolygonF &poly, double length, int rod)
 
 void MainWindow::SigmaPoly(QPolygonF &poly, double length, int rod)
 {
-    double maxNx = MaxNx();
-    double L = ui->RodsParametersTable->item(rod,0)->text().toDouble();
+    NxPoly(poly,length,rod);
     double A = ui->RodsParametersTable->item(rod,1)->text().toDouble();
-    poly.clear();
-    poly << QPointF(0,0)
-         << QPointF(length,0)
-         << QPointF(length,-100*NxValue(rod,L)/maxNx/A)
-         << QPointF(0,-100*NxValue(rod,0)/maxNx/A)
-         << QPointF(0,0);
+        poly[2].ry()*= A/MeanA();
+        poly[3].ry()*= A/MeanA();
 }
 // Рисование
 void MainWindow::draw()
@@ -634,8 +660,6 @@ void MainWindow::draw()
             }
         }
     }
-    //QRectF r = graphicsScene->sceneRect();
-    //ui->PreprocessorGraphicsWiew->fitInView(r,Qt::KeepAspectRatio);
 }
 
 void MainWindow::postProcDraw()
@@ -797,26 +821,18 @@ void MainWindow::postProcDraw()
 
 }
 
-void MainWindow::MysteryDraw()
-{/*
-    graphicsScene = new QGraphicsScene;
-    graphicsScene->setItemIndexMethod(QGraphicsScene::NoIndex);
-    ui->PreprocessorGraphicsWiew->setScene(graphicsScene);
-    QFont font;
-    int size = 5;
-    for (int i = 0; i < size; i++)
-        for (int j = 0; j < size; j++){
-
-            graphicsScene->addSimpleText(QString(tr("%1 %2").arg(char(i+20)).arg(char(j+20))));
-        }*/
-/*QPolygonF pol;
-TermPoly(pol,length);
-for (int i = 0; i < 5; i++){
-    graphicsScene->addPolygon(pol.translated(i*length,0))->setBrush(Qt::yellow);
+void MainWindow::MysteryRestore()
+{
+    mysteryCounter = 0;
+    ui->MysteryButton->setVisible(true);
+    ui->mysteryAction->setVisible(false);
+    ui->mysteryButton2->setVisible(false);
+    ui->mysteryButton3->setVisible(false);
+    ui->EasterEgg->setVisible(false);
+    ui->tabs->setTabVisible(0,true);
+    ui->tabs->setTabVisible(1,true);
+    ui->tabs->setTabVisible(2,false);
 }
-graphicsScene->addPolygon(pol)->setPen(pen);*/
-}
-
 
 void MainWindow::on_CountOfRods_valueChanged(int countOfRods)
 {
@@ -882,8 +898,6 @@ void MainWindow::on_CountOfRods_valueChanged(int countOfRods)
 
 }
 
-
-
 void MainWindow::on_RodsParametersTable_cellChanged(int row, int column)
 {
     isCalculated = false;
@@ -894,7 +908,6 @@ void MainWindow::on_RodsParametersTable_cellChanged(int row, int column)
         ui->RodsParametersTable->item(row,column)->setBackground(Qt::red);
     }
 }
-
 
 void MainWindow::on_LinearLoadTable_cellChanged(int row, int column)
 {
@@ -907,7 +920,6 @@ void MainWindow::on_LinearLoadTable_cellChanged(int row, int column)
     }
 }
 
-
 void MainWindow::on_ConcentratedLoadTable_cellChanged(int row, int column)
 {
     isCalculated = false;
@@ -918,7 +930,6 @@ void MainWindow::on_ConcentratedLoadTable_cellChanged(int row, int column)
         ui->ConcentratedLoadTable->item(row,column)->setBackground(Qt::red);
     }
 }
-
 
 void MainWindow::on_ProcessorButton_clicked()
 {
@@ -1044,13 +1055,11 @@ void MainWindow::on_ProcessorButton_clicked()
     postProcDraw();
 }
 
-
 void MainWindow::on_termComboBox_currentIndexChanged(int index)
 {
     isCalculated = false;
     draw();
 }
-
 
 void MainWindow::on_actionOpen_triggered()
 {
@@ -1067,7 +1076,6 @@ void MainWindow::on_actionOpen_triggered()
         return;
     }
 }
-
 
 void MainWindow::on_actionSave_triggered()
 {
@@ -1099,18 +1107,103 @@ void MainWindow::on_actionSave_triggered()
 
 }
 
-
 void MainWindow::on_MysteryButton_clicked()
 {
-    MysteryDraw();
+    mysteryCounter++;
+    QMessageBox msg= QMessageBox();
+    if(mysteryCounter < 14)
+        msg.setIconPixmap(QPixmap(":/Pictures/DuckPic.png").scaled(200,200));
+    else
+        msg.setIconPixmap(QPixmap(":/resourses/RealDuck.png"));
+    msg.setWindowIcon(QIcon(":/Pictures/cat.gif"));
+    msg.setTextFormat(Qt::TextFormat::MarkdownText);
+    msg.addButton("Окей",QMessageBox::DestructiveRole);
+    switch (mysteryCounter) {
+    case 1:
+        msg.setWindowTitle("Приветствую");
+        msg.setText("# Сжатие уточки");
+        msg.setInformativeText("Не стоит трогать эту кнопку, некоторых вещей лучше не знать...");
+        msg.exec();
+        break;
+    case 5:
+        msg.setWindowTitle("Интересный факт");
+        msg.setText("# Опора уточки");
+        msg.setInformativeText("Интересное слово 'Безумие', а вы знаете что это такое?");
+        msg.exec();
+        break;
+    case 7:
+        msg.setWindowTitle("А вы упорный");
+        msg.setText("# Поперечное сечение уточки");
+        msg.setInformativeText("Безумие — это точное повторение одного и того же действия раз за разом в надежде на изменение.");
+        msg.exec();
+        break;
+    case 8:
+        msg.setWindowTitle("А вы всё упорнее");
+        msg.setText("# Растяжение уточки");
+        msg.setInformativeText("Это.");
+        msg.exec();
+        break;
+    case 9:
+        msg.setWindowTitle("УПОРСТВО!");
+        msg.setText("# Оболочка уточки");
+        msg.setInformativeText("Есть.");
+        msg.exec();
+        break;
+    case 10:
+        msg.setWindowTitle("Решимость");
+        msg.setText("# Метод утиных сил");
+        msg.setInformativeText("Безумие.");
+        msg.exec();
+        break;
+    case 11:
+        msg.setIconPixmap(QPixmap(":/Pictures/DuckWithKnife.png").scaled(200,200));
+        msg.setWindowTitle("...");
+        msg.setText("# нАпряжение уточки");
+        msg.setInformativeText("Ну как так можно? Остановитесь!");
+        msg.exec();
+        ui->MysteryButton->setStyleSheet("image: url(:/Pictures/DeltaXi-1.png);");
+        break;
+    case 12:
+        msg.setWindowTitle("...");
+        msg.setText("# Текучесть уточки");
+        msg.setInformativeText("Простых слов вы не понимаете... ЛАДНО, я уберу эту кнопку! Лучше идите считайте стержни!.");
+        msg.exec();
+        ui->MysteryButton->setVisible(false);
+        ui->mysteryButton2->setVisible(true);
+        break;
+    case 20:
+        msg.setIconPixmap(QPixmap(":/resourses/RealDuck.png"));
+        msg.setWindowIcon(QIcon(":/resourses/DeltaXi"));
+        msg.setWindowTitle("Что будем делать?");
+        msg.setText("# Аркадий");
+        msg.setInformativeText("Уважаемый пользователь, раз вам не нужно считать стержни, давайте их уберем :)");
+        msg.exec();
+        ui->tabs->setTabVisible(0,false);
+        ui->tabs->setTabVisible(1,false);
+        ui->tabs->setTabVisible(2,true);
+        break;
+    default: break;
+    }
 }
-
 
 void MainWindow::on_RefreshButton_clicked()
 {
+    if(mysteryCounter == 13){
+        QMessageBox msg = QMessageBox();
+        msg.setIconPixmap(QPixmap(":/resourses/RealDuck1111.png").scaled(200,200));
+        msg.setWindowIcon(QIcon(":/Pictures/cat.gif"));
+        msg.setTextFormat(Qt::TextFormat::MarkdownText);
+        msg.addButton("Окей",QMessageBox::DestructiveRole);
+        msg.setWindowTitle("Упс...");
+        msg.setText("# Аркаша");
+        msg.setInformativeText("Это какой-то программный сбой. Теперь точно удалено!");
+        msg.exec();
+        ui->RefreshButton->setStyleSheet("image: url(:/resourses/restart.png);");
+        ui->mysteryAction->setVisible(true);
+        return;
+    }
     draw();
 }
-
 
 void MainWindow::on_stepSpinBox_valueChanged(int arg1)
 {
@@ -1118,7 +1211,6 @@ void MainWindow::on_stepSpinBox_valueChanged(int arg1)
         ui->stepSpinBox->setValue(10);
     UpdatePostProcTable();
 }
-
 
 void MainWindow::on_PointButton_clicked()
 {
@@ -1131,7 +1223,7 @@ void MainWindow::on_PointButton_clicked()
             res = UxValue(currRod,ui->PointL->value());
             ui->UxPoint_label->setText(QString(tr("Ux = %1").arg(res)));
             res = SigmaValue(currRod,ui->PointL->value());
-            ui->SigmaPoint_label->setText(QString(tr("Ux = %1").arg(res)));
+            ui->SigmaPoint_label->setText(QString(tr("σx = %1").arg(res)));
         }
         else {
             ui->NxPoint_label->setText(QString("Не лги мне!"));
@@ -1146,21 +1238,117 @@ void MainWindow::on_PointButton_clicked()
     }
 }
 
-
 void MainWindow::on_checkNx_stateChanged(int arg1)
 {
-    postProcDraw();
+    if(isCalculated)
+        postProcDraw();
 }
-
 
 void MainWindow::on_checkUx_stateChanged(int arg1)
 {
-    postProcDraw();
+    if(isCalculated)
+        postProcDraw();
 }
-
 
 void MainWindow::on_checkSigma_stateChanged(int arg1)
 {
-    postProcDraw();
+    if(isCalculated)
+        postProcDraw();
+}
+
+void MainWindow::on_mysteryAction_triggered()
+{
+    QMessageBox msg = QMessageBox();
+    msg.setIconPixmap(QPixmap(":/resourses/RealDuck.png"));
+    msg.setWindowIcon(QIcon(":/Pictures/cat.gif"));
+    msg.setTextFormat(Qt::TextFormat::MarkdownText);
+    msg.addButton("Окей",QMessageBox::DestructiveRole);
+    msg.setWindowTitle("...");
+    msg.setText("# Аркадий");
+    msg.setInformativeText("МУ-ХА-ХА... Продолжай...");
+    ui->MysteryButton->setStyleSheet("image: url(:/Pictures/DeltaXi.png);");
+    msg.exec();
+    ui->mysteryAction->setVisible(false);
+    ui->MysteryButton->setVisible(true);
+}
+
+void MainWindow::on_mysteryButton2_clicked()
+{
+    QMessageBox msg = QMessageBox();
+    msg.setIconPixmap(QPixmap(":/Pictures/DuckPic.png").scaled(200,200));
+    msg.setWindowIcon(QIcon(":/Pictures/cat.gif"));
+    msg.setTextFormat(Qt::TextFormat::MarkdownText);
+    msg.addButton("Окей",QMessageBox::DestructiveRole);
+    msg.setWindowTitle("Упс...");
+    msg.setText("# Аркаша");
+    msg.setInformativeText("Вот это да, вы смогли найти её! Хорошо, спрячу её получше.");
+    msg.exec();
+    ui->mysteryButton2->setVisible(false);
+    ui->mysteryButton3->setVisible(true);
+}
+
+void MainWindow::on_mysteryButton3_clicked()
+{
+    QMessageBox msg = QMessageBox();
+    msg.setIconPixmap(QPixmap(":/resourses/RealDuck1111.png").scaled(200,200));
+    msg.setWindowIcon(QIcon(":/Pictures/cat.gif"));
+    msg.setTextFormat(Qt::TextFormat::MarkdownText);
+    msg.addButton("Окей",QMessageBox::DestructiveRole);
+    msg.setWindowTitle("Упс...");
+    msg.setText("# Аркаша");
+    msg.setInformativeText("Ну нет, это ни в какие ворота не лезет!!! Всё, удаляю кнопку.");
+    msg.exec();
+    mysteryCounter++;
+    ui->mysteryButton3->setVisible(false);
+    ui->RefreshButton->setStyleSheet("image: url(:/Pictures/DeltaXi-5.png);");
+}
+
+void MainWindow::on_endThis_clicked()
+{
+    QMessageBox msg = QMessageBox();
+    msg.setIconPixmap(QPixmap(":/Pictures/fox.jpg").scaled(500,600));
+    msg.setWindowIcon(QIcon(":/Pictures/cat.gif"));
+    msg.setTextFormat(Qt::TextFormat::MarkdownText);
+    msg.addButton("До новых встреч!",QMessageBox::DestructiveRole);
+    msg.setWindowTitle("Пара слов на последок");
+    msg.setText("# Вы прошли Компютерную механику!\n Курс был очень веселым, и интересным, спасибо!");
+    msg.exec();
+    MysteryRestore();
+}
+
+void MainWindow::on_pushButton_4_clicked()
+{
+    mysteryCounter--;
+    ui->label->setText(tr("%1").arg(mysteryCounter));
+}
+
+void MainWindow::on_pushButton_2_clicked()
+{
+    mysteryCounter--;
+    ui->label->setText(tr("%1").arg(mysteryCounter));
+}
+
+void MainWindow::on_pushButton_clicked()
+{
+    mysteryCounter++;
+    ui->label->setText(tr("%1").arg(mysteryCounter));
+}
+
+void MainWindow::on_pushButton_3_clicked()
+{
+    mysteryCounter++;
+    ui->label->setText(tr("%1").arg(mysteryCounter));
+}
+
+void MainWindow::on_pushButton_5_clicked()
+{
+    mysteryCounter++;
+    ui->label->setText(tr("%1").arg(mysteryCounter));
+}
+
+void MainWindow::on_pushButton_6_clicked()
+{
+    mysteryCounter++;
+    ui->label->setText(tr("%1").arg(mysteryCounter));
 }
 
